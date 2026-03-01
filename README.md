@@ -140,3 +140,4 @@ This project was built as part of a **Blockchain & Decentralized Applications** 
 | [Brian Nyamanga Otieno 23/04444  BIT]
 | [James Mwangi 18/03989 BBIT] 
 | [Anne wanjiku 23/08081 BBIT] | 
+| [Hongo Barnabas 16/06034 BBIT] | 
