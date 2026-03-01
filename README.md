@@ -134,9 +134,9 @@ This project was built as part of a **Blockchain & Decentralized Applications** 
 
 ## 👥 Group Members
 
-| Name | Role |
+| Name | 
 |---|---|
-| [Member 1] | Frontend & Blockchain Logic |
-| [Member 2] | UI Design & Styling |
-| [Member 3] | Documentation & Testing |
-| [Member 4] | Presentation & Research |
+| [Seth Nalwa 23/08173  BIT]
+| [Brian Nyamanga Otieno 23/04444  BIT]
+| [James Mwangi 18/03989 BBIT] 
+| [Anne wanjiku 23/08081 BBIT] | 
