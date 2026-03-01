@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DecentralVote — IEBC Blockchain Voting</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #020f05;
+    --surface: #071a0d;
+    --border: #0f3320;
+    --accent: #16a34a;
+    --accent-bright: #22c55e;
+    --accent2: #fbbf24;
+    --green: #4ade80;
+    --yellow: #fbbf24;
+    --red: #ef4444;
+    --text: #bbf7d0;
+    --muted: #2d6644;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header { text-align: center; margin-bottom: 40px; }
+
+  .logo-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+    color: #000;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    padding: 5px 14px;
+    border-radius: 2px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  h1 { font-size: clamp(2.2rem, 6vw, 4rem); font-weight: 800; color: #fff; line-height: 1.05; letter-spacing: -1px; }
+  h1 span { color: var(--accent); }
+  .subtitle { margin-top: 12px; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); letter-spacing: 1px; }
+
+  /* NAV */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 30px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .nav-tab {
+    padding: 9px 20px;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .nav-tab.active { background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; }
+  .nav-tab:hover:not(.active) { color: var(--text); }
+
+  /* PANELS */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 28px; margin-bottom: 20px; }
+  .card-title { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+
+  /* FORM */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 11px 14px; border-radius: 5px; font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-input::placeholder { color: var(--muted); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* BUTTONS */
+  .btn { padding: 12px 28px; border-radius: 5px; border: none; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
+  .btn-primary { background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; width: 100%; margin-top: 6px; }
+  .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+  .btn-approve { background: rgba(74,222,128,0.1); border: 1px solid #4ade80; color: #4ade80; padding: 7px 14px; font-size: 10px; }
+  .btn-approve:hover { background: rgba(74,222,128,0.2); }
+  .btn-reject { background: rgba(239,68,68,0.1); border: 1px solid #ef4444; color: #ef4444; padding: 7px 14px; font-size: 10px; }
+  .btn-reject:hover { background: rgba(239,68,68,0.2); }
+
+  /* STATUS BOXES */
+  .status-box { border-radius: 8px; padding: 16px 20px; font-family: 'Space Mono', monospace; font-size: 12px; margin-bottom: 20px; line-height: 1.7; display: none; }
+  .status-box.pending { background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.35); color: #fbbf24; }
+  .status-box.approved { background: rgba(74,222,128,0.07); border: 1px solid rgba(74,222,128,0.35); color: #4ade80; }
+  .status-box.rejected { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.35); color: #ef4444; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .badge-pending { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.4); color: #fbbf24; }
+  .badge-approved { background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.4); color: #4ade80; }
+  .badge-rejected { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #ef4444; }
+
+  /* WALLET BAR */
+  .wallet-bar { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  .wallet-info { font-family: 'Space Mono', monospace; font-size: 12px; }
+  .wallet-label { color: var(--muted); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 3px; }
+  .wallet-address { color: #22c55e; }
+
+  /* STATS */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; text-align: center; }
+  .stat-number { font-size: 1.8rem; font-weight: 800; color: #22c55e; font-family: 'Space Mono', monospace; line-height: 1; }
+  .stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+  /* CANDIDATES */
+  .candidates-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-bottom: 36px; }
+  .candidate-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; transition: border-color 0.2s, transform 0.15s; position: relative; overflow: hidden; }
+  .candidate-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--candidate-color, var(--accent)), transparent); opacity: 0; transition: opacity 0.3s; }
+  .candidate-card:hover { border-color: rgba(34,197,94,0.5); transform: translateY(-2px); }
+  .candidate-card:hover::before { opacity: 1; }
+  .candidate-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 10px; background: rgba(0,229,255,0.08); border: 1.5px solid var(--border); }
+  .candidate-name { font-size: 1rem; font-weight: 800; color: #fff; margin-bottom: 2px; }
+  .candidate-party { font-size: 10px; font-family: 'Space Mono', monospace; color: var(--muted); letter-spacing: 1px; margin-bottom: 14px; }
+  .vote-bar-wrap { margin-bottom: 12px; }
+  .vote-bar-meta { display: flex; justify-content: space-between; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 5px; }
+  .vote-bar-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .vote-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s cubic-bezier(.22,.68,0,1.2); }
+  .vote-btn { width: 100%; padding: 10px; border: 1.5px solid #22c55e; background: transparent; color: #22c55e; border-radius: 5px; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer; letter-spacing: 1px; text-transform: uppercase; transition: all 0.2s; }
+  .vote-btn:hover:not(:disabled) { background: #22c55e; color: #fff; }
+  .vote-btn:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--muted); color: var(--muted); }
+  .vote-btn.voted { background: rgba(74,222,128,0.1); border-color: #4ade80; color: #4ade80; }
+
+  /* LEDGER & ADMIN TABLES */
+  .section-title { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; animation: pulse 2s infinite; flex-shrink: 0; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .data-table { width: 100%; border-collapse: collapse; font-family: 'Space Mono', monospace; font-size: 11px; }
+  .data-table th { text-align: left; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+  .data-table td { padding: 11px 12px; border-bottom: 1px solid rgba(26,48,64,0.5); vertical-align: middle; }
+  .data-table tr:hover td { background: rgba(34,197,94,0.03); }
+  .block-badge { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); color: #22c55e; padding: 2px 8px; border-radius: 3px; font-size: 10px; }
+  .hash-text { color: #2d6644; font-size: 10px; }
+  .candidate-text { color: #4ade80; font-weight: 700; }
+  .timestamp-text { color: var(--muted); font-size: 10px; }
+  .voter-name-text { color: #fff; font-weight: 700; }
+  .id-text { color: var(--muted); font-size: 10px; }
+  .action-btns { display: flex; gap: 6px; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 30px; right: 30px; background: var(--surface); border: 1px solid #22c55e; color: #4ade80; padding: 14px 22px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 12px; opacity: 0; transform: translateY(20px); transition: all 0.3s; z-index: 1000; max-width: 340px; line-height: 1.5; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-color: #ef4444; color: #ef4444; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 36px 20px; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; }
+  .empty-state .icon { font-size: 2rem; margin-bottom: 10px; }
+
+  .admin-info { background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.25); border-radius: 8px; padding: 12px 18px; font-family: 'Space Mono', monospace; font-size: 11px; color: #fbbf24; margin-bottom: 20px; }
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+  .how-it-works { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); line-height: 2; }
+
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .form-row { grid-template-columns: 1fr; }
+    .data-table th:nth-child(3), .data-table td:nth-child(3) { display: none; }
+    .nav-tabs { width: 100%; }
+    .nav-tab { flex: 1; text-align: center; font-size: 9px; padding: 9px 6px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-badge">🇰🇪 IEBC — Blockchain Powered</div>
+    <h1>Decentral<span>Vote</span></h1>
+    <p class="subtitle">// INDEPENDENT ELECTORAL & BOUNDARIES COMMISSION · SIMCHAIN v1</p>
+  </header>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchTab('register', this)">📝 Register</button>
+    <button class="nav-tab" onclick="switchTab('vote', this)">🗳 Vote</button>
+    <button class="nav-tab" onclick="switchTab('admin', this)">🔐 Admin</button>
+    <button class="nav-tab" onclick="switchTab('ledger', this)">⛓ Ledger</button>
+  </div>
+
+  <!-- ===== REGISTER PANEL ===== -->
+  <div class="panel active" id="panel-register">
+    <div class="card">
+      <div class="card-title">📝 Voter Registration</div>
+      <div class="status-box" id="regStatusBox"></div>
+      <div id="regForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" id="regName" type="text" placeholder="e.g. John Kamau">
+          </div>
+          <div class="form-group">
+            <label class="form-label">National ID Number</label>
+            <input class="form-input" id="regID" type="text" placeholder="e.g. 12345678">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">County</label>
+            <input class="form-input" id="regCounty" type="text" placeholder="e.g. Nairobi">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input class="form-input" id="regPhone" type="text" placeholder="e.g. 0712345678">
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="submitRegistration()">Submit Registration →</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:0.85rem;color:var(--muted);">ℹ How It Works</div>
+      <div class="how-it-works">
+        Step 1 — Register with your National ID &amp; details<br>
+        Step 2 — Admin verifies and approves your application<br>
+        Step 3 — You receive a unique blockchain wallet address<br>
+        Step 4 — Connect wallet in the Vote tab to cast your vote<br>
+        Step 5 — Your vote is recorded permanently on the chain
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VOTE PANEL ===== -->
+  <div class="panel" id="panel-vote">
+    <div class="wallet-bar">
+      <div class="wallet-info">
+        <div class="wallet-label">Connected Wallet</div>
+        <div class="wallet-address" id="walletAddress">Not connected — enter your National ID to connect</div>
+      </div>
+      <button class="btn btn-primary" id="connectBtn" style="width:auto;margin:0;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+
+    <div class="status-box pending" id="voteStatusBox" style="display:block;">
+      ⚠ You must register first, then connect your wallet using your National ID to vote.
+    </div>
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:1.4rem;font-weight:800;color:#fff;">🗳 Student Council Election 2025</div>
+      <div style="font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-top:6px;">
+        Blockchain Network: SimChain v1 &nbsp;|&nbsp; Block Height: <span id="blockHeight">0</span>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-number" id="totalVotes">0</div><div class="stat-label">Total Votes</div></div>
+      <div class="stat-card"><div class="stat-number" id="totalBlocks">1</div><div class="stat-label">Blocks Mined</div></div>
+      <div class="stat-card"><div class="stat-number" id="registeredCount">0</div><div class="stat-label">Approved Voters</div></div>
+      <div class="stat-card"><div class="stat-number">✓</div><div class="stat-label">Chain Valid</div></div>
+    </div>
+
+    <div class="status-box approved" id="alreadyVotedMsg" style="display:none;">
+      ✓ Your vote has been recorded on the blockchain. Each wallet can only vote once.
+    </div>
+
+    <div class="candidates-grid" id="candidatesGrid"></div>
+  </div>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <div class="panel" id="panel-admin">
+    <div class="admin-info">🔐 Admin Panel &nbsp;·&nbsp; Default password: <strong>admin123</strong></div>
+
+    <div class="card" id="adminLoginCard">
+      <div class="card-title">🔐 Admin Login</div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="adminPass" type="password" placeholder="Enter admin password">
+      </div>
+      <button class="btn btn-primary" onclick="adminLogin()">Login as Admin →</button>
+    </div>
+
+    <div id="adminDashboard" style="display:none;">
+      <div class="card">
+        <div class="card-title"><span class="dot"></span>Pending Registrations</div>
+        <div id="pendingList"><div class="empty-state"><div class="icon">📭</div>No pending registrations</div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="card">
+        <div class="card-title">✅ Approved Voters</div>
+        <div id="approvedList"><div class="empty-state"><div class="icon">👤</div>No approved voters yet</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LEDGER PANEL ===== -->
+  <div class="panel" id="panel-ledger">
+    <div class="card">
+      <div class="section-title"><span class="dot"></span>Live Blockchain Ledger</div>
+      <table class="data-table">
+        <thead>
+          <tr><th>Block</th><th>Voter (Wallet)</th><th>Block Hash</th><th>Candidate</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody id="ledgerBody">
+          <tr>
+            <td><span class="block-badge">#0</span></td>
+            <td colspan="3" style="color:var(--muted);font-size:11px;">Genesis Block — Chain Initialized</td>
+            <td class="timestamp-text" id="genesisTime"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================================================
+// STATE
+// ===================================================
+const blockchain = [];
+const voterRegistry = [];
+let currentWallet = null;
+let currentVoter = null;
+let hasVoted = false;
+let adminLoggedIn = false;
+
+const candidates = [
+  { id:1, name:"Alice Mwangi",  party:"Progress Alliance",   emoji:"🌟", votes:0, color:"#00e5ff" },
+  { id:2, name:"Brian Otieno",  party:"Student First Party", emoji:"🔥", votes:0, color:"#ff3d71" },
+  { id:3, name:"Carol Njeri",   party:"Unity Coalition",     emoji:"🌿", votes:0, color:"#00ff9d" },
+  { id:4, name:"David Kamau",   party:"Future Builders",     emoji:"⚡", votes:0, color:"#ffd600" },
+];
+
+// ===================================================
+// UTILS
+// ===================================================
+function simpleHash(data) {
+  let h = 0;
+  for (let i = 0; i < data.length; i++) { h = ((h<<5)-h) + data.charCodeAt(i); h=h&h; }
+  return '0x' + Math.abs(h).toString(16).padStart(8,'0') + Math.random().toString(16).slice(2,10);
+}
+
+function generateWallet() {
+  const c='0123456789abcdef'; let a='0x';
+  for(let i=0;i<40;i++) a+=c[Math.floor(Math.random()*16)];
+  return a;
+}
+
+function shortW(w) { return w.slice(0,6)+'...'+w.slice(-4); }
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type==='error'?' error':'');
+  setTimeout(()=>t.className='toast', 4000);
+}
+
+// ===================================================
+// TABS
+// ===================================================
+function switchTab(name, btn) {
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='vote') renderCandidates();
+  if (name==='admin' && adminLoggedIn) renderAdminLists();
+}
+
+// ===================================================
+// REGISTRATION
+// ===================================================
+function submitRegistration() {
+  const name   = document.getElementById('regName').value.trim();
+  const id     = document.getElementById('regID').value.trim();
+  const county = document.getElementById('regCounty').value.trim();
+  const phone  = document.getElementById('regPhone').value.trim();
+
+  if (!name||!id||!county||!phone) { showToast('⚠ Please fill in all fields','error'); return; }
+  if (voterRegistry.find(v=>v.nationalID===id)) { showToast('⚠ This National ID is already registered','error'); return; }
+
+  voterRegistry.push({ id:Date.now(), name, nationalID:id, county, phone, wallet:null, status:'pending' });
+
+  const box = document.getElementById('regStatusBox');
+  box.className = 'status-box pending';
+  box.style.display = 'block';
+  box.innerHTML = `⏳ <strong>Registration submitted!</strong><br>
+    Your application is pending admin approval.<br><br>
+    Name: <strong>${name}</strong> &nbsp;|&nbsp; National ID: <strong>${id}</strong><br><br>
+    Once approved, go to the <strong>Vote tab</strong> and click "Connect Wallet" using your National ID.`;
+
+  document.getElementById('regForm').style.display = 'none';
+  showToast('✅ Registration submitted — awaiting admin approval');
+  updateStats();
+}
+
+function checkMyStatus() {
+  const id = document.getElementById('checkID').value.trim();
+  if (!id) return;
+  const voter = voterRegistry.find(v=>v.nationalID===id);
+  const box = document.getElementById('checkStatusResult');
+  if (!voter) {
+    box.className='status-box rejected'; box.style.display='block';
+    box.innerHTML='❌ No registration found for this ID.';
+  } else if (voter.status==='pending') {
+    box.className='status-box pending'; box.style.display='block';
+    box.innerHTML=`⏳ Your registration is pending approval.`;
+  } else if (voter.status==='approved') {
+    box.className='status-box approved'; box.style.display='block';
+    box.innerHTML=`✅ Approved! Your wallet: <strong>${shortW(voter.wallet)}</strong><br>Go to Vote tab and connect with your ID.`;
+  } else {
+    box.className='status-box rejected'; box.style.display='block';
+    box.innerHTML='❌ Your registration was rejected.';
+  }
+}
+
+// ===================================================
+// ADMIN
+// ===================================================
+function adminLogin() {
+  if (document.getElementById('adminPass').value === 'admin123') {
+    adminLoggedIn = true;
+    document.getElementById('adminLoginCard').style.display = 'none';
+    document.getElementById('adminDashboard').style.display = 'block';
+    renderAdminLists();
+    showToast('🔐 Admin logged in successfully');
+  } else {
+    showToast('❌ Incorrect password','error');
+  }
+}
+
+function approveVoter(voterId) {
+  const v = voterRegistry.find(v=>v.id===voterId);
+  if (!v) return;
+  v.status = 'approved';
+  v.wallet = generateWallet();
+  renderAdminLists();
+  updateStats();
+  showToast(`✅ ${v.name} approved!\nWallet: ${shortW(v.wallet)}`);
+}
+
+function rejectVoter(voterId) {
+  const v = voterRegistry.find(v=>v.id===voterId);
+  if (!v) return;
+  v.status = 'rejected';
+  renderAdminLists();
+  showToast(`❌ ${v.name} registration rejected`,'error');
+}
+
+function renderAdminLists() {
+  const pending  = voterRegistry.filter(v=>v.status==='pending');
+  const approved = voterRegistry.filter(v=>v.status==='approved');
+
+  const pDiv = document.getElementById('pendingList');
+  if (pending.length===0) {
+    pDiv.innerHTML='<div class="empty-state"><div class="icon">📭</div>No pending registrations</div>';
+  } else {
+    pDiv.innerHTML=`<table class="data-table"><thead><tr>
+      <th>Name</th><th>National ID</th><th>County</th><th>Phone</th><th>Action</th>
+    </tr></thead><tbody>
+    ${pending.map(v=>`<tr>
+      <td class="voter-name-text">${v.name}</td>
+      <td class="id-text">${v.nationalID}</td>
+      <td style="color:var(--muted);font-size:11px">${v.county}</td>
+      <td style="color:var(--muted);font-size:11px">${v.phone}</td>
+      <td><div class="action-btns">
+        <button class="btn btn-approve" onclick="approveVoter(${v.id})">✓ Approve</button>
+        <button class="btn btn-reject" onclick="rejectVoter(${v.id})">✕ Reject</button>
+      </div></td>
+    </tr>`).join('')}
+    </tbody></table>`;
+  }
+
+  const aDiv = document.getElementById('approvedList');
+  if (approved.length===0) {
+    aDiv.innerHTML='<div class="empty-state"><div class="icon">👤</div>No approved voters yet</div>';
+  } else {
+    aDiv.innerHTML=`<table class="data-table"><thead><tr>
+      <th>Name</th><th>National ID</th><th>Wallet Address</th><th>Status</th>
+    </tr></thead><tbody>
+    ${approved.map(v=>{
+      const voted = blockchain.some(b=>b.voter===v.wallet);
+      return `<tr>
+        <td class="voter-name-text">${v.name}</td>
+        <td class="id-text">${v.nationalID}</td>
+        <td class="hash-text">${shortW(v.wallet)}</td>
+        <td>${voted
+          ? '<span class="badge badge-approved">✓ Voted</span>'
+          : '<span class="badge badge-pending">Not yet voted</span>'}</td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>`;
+  }
+}
+
+// ===================================================
+// VOTING
+// ===================================================
+function connectWallet() {
+  const nationalID = prompt('Enter your National ID Number to connect your wallet:');
+  if (!nationalID) return;
+
+  const voter = voterRegistry.find(v=>v.nationalID===nationalID.trim());
+  const box = document.getElementById('voteStatusBox');
+
+  if (!voter) {
+    box.className='status-box rejected'; box.style.display='block';
+    box.innerHTML='❌ National ID not found. Please go to the <strong>Register tab</strong> and sign up first.';
+    showToast('❌ ID not found — please register first','error'); return;
+  }
+
+  if (voter.status==='pending') {
+    box.className='status-box pending'; box.style.display='block';
+    box.innerHTML=`⏳ <strong>${voter.name}</strong>, your registration is still pending admin approval. Please wait.`;
+    showToast('⏳ Still pending admin approval','error'); return;
+  }
+
+  if (voter.status==='rejected') {
+    box.className='status-box rejected'; box.style.display='block';
+    box.innerHTML='❌ Your registration was rejected. Contact the election administrator.';
+    showToast('❌ Registration rejected','error'); return;
+  }
+
+  // Approved — connect!
+  currentWallet = voter.wallet;
+  currentVoter  = voter;
+  hasVoted      = blockchain.some(b=>b.voter===currentWallet);
+
+  box.style.display = 'none';
+  document.getElementById('walletAddress').textContent = shortW(currentWallet) + ' (' + voter.name + ')';
+  document.getElementById('connectBtn').textContent = 'Connected ✓';
+  document.getElementById('connectBtn').disabled = true;
+
+  if (hasVoted) {
+    document.getElementById('alreadyVotedMsg').style.display = 'block';
+  }
+
+  renderCandidates();
+  showToast(`✅ Welcome ${voter.name}! Wallet connected. You may now vote.`);
+}
+
+function castVote(candidateId) {
+  if (!currentWallet || hasVoted) return;
+  hasVoted = true;
+
+  const prevHash = blockchain.length>0 ? blockchain[blockchain.length-1].hash : '0x000000genesis';
+  const ts = new Date().toISOString();
+  const block = {
+    index: blockchain.length,
+    voter: currentWallet,
+    voterName: currentVoter.name,
+    candidateId,
+    prevHash,
+    hash: simpleHash(currentWallet+candidateId+ts+prevHash),
+    timestamp: ts,
+    nonce: Math.floor(Math.random()*99999)
+  };
+  blockchain.push(block);
+
+  const candidate = candidates.find(c=>c.id===candidateId);
+  candidate.votes++;
+
+  renderCandidates();
+  updateStats();
+  addLedgerRow(block, candidate.name);
+  document.getElementById('alreadyVotedMsg').style.display = 'block';
+  showToast(`⛓ Vote cast for ${candidate.name}!\nBlock #${block.index+1} mined to the chain.`);
+  if (adminLoggedIn) renderAdminLists();
+}
+
+function renderCandidates() {
+  const total = candidates.reduce((s,c)=>s+c.votes,0);
+  document.getElementById('candidatesGrid').innerHTML = candidates.map(c=>{
+    const pct = total>0 ? ((c.votes/total)*100).toFixed(1) : '0.0';
+    const isVotedFor = blockchain.some(b=>b.voter===currentWallet && b.candidateId===c.id);
+    return `<div class="candidate-card" style="--candidate-color:${c.color}">
+      <div class="candidate-avatar" style="border-color:${c.color}40;background:${c.color}10">${c.emoji}</div>
+      <div class="candidate-name">${c.name}</div>
+      <div class="candidate-party">${c.party}</div>
+      <div class="vote-bar-wrap">
+        <div class="vote-bar-meta"><span>${c.votes} vote${c.votes!==1?'s':''}</span><span>${pct}%</span></div>
+        <div class="vote-bar-track"><div class="vote-bar-fill" style="width:${pct}%;background:${c.color}"></div></div>
+      </div>
+      <button class="vote-btn ${isVotedFor?'voted':''}"
+        onclick="castVote(${c.id})"
+        ${!currentWallet||hasVoted?'disabled':''}
+      >${isVotedFor?'✓ VOTED':'Cast Vote'}</button>
+    </div>`;
+  }).join('');
+}
+
+function updateStats() {
+  const total = candidates.reduce((s,c)=>s+c.votes,0);
+  const approved = voterRegistry.filter(v=>v.status==='approved').length;
+  document.getElementById('totalVotes').textContent    = total;
+  document.getElementById('totalBlocks').textContent  = blockchain.length+1;
+  document.getElementById('blockHeight').textContent  = blockchain.length;
+  document.getElementById('registeredCount').textContent = approved;
+}
+
+function addLedgerRow(block, candidateName) {
+  const tbody = document.getElementById('ledgerBody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><span class="block-badge">#${block.index+1}</span></td>
+    <td style="color:var(--text)">${shortW(block.voter)}</td>
+    <td class="hash-text">${block.hash.slice(0,18)}...</td>
+    <td class="candidate-text">${candidateName}</td>
+    <td class="timestamp-text">${new Date(block.timestamp).toLocaleTimeString()}</td>`;
+  tr.style.background = 'rgba(34,197,94,0.05)';
+  tbody.appendChild(tr);
+  setTimeout(()=>tr.style.background='',2000);
+}
+
+// INIT
+document.getElementById('genesisTime').textContent = new Date().toLocaleTimeString();
+renderCandidates();
+</script>
+</body>
+</html>
