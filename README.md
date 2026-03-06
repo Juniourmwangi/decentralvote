@@ -100,8 +100,8 @@ This is a **single HTML file** — no installation or server needed.
 
  Group members:
 
-Seth Nalwa — 23/08173 · BIT
-Brian Nyamanga Otieno — 23/04444 · BIT
-James Mwangi — 18/03989 · BBIT
-Anne Wanjiku — 23/08081 · BBIT
-Hongo Barnabas — 16/06034 · BBIT
+|Seth Nalwa — 23/08173 · BIT|
+|Brian Nyamanga Otieno — 23/04444 · BIT|
+|James Mwangi — 18/03989 · BBIT|
+|Anne Wanjiku — 23/08081 · BBIT|
+|Hongo Barnabas — 16/06034 · BBIT|
